@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Club Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 600px;
+            margin: 30px auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin: 10px 0 5px;
+        }
+
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        p {
+            font-size: 16px;
+            color: #333;
+        }
+
+        #output {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #555;
+            background: #f1f1f1;
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Book Club Tracker</h1>
+    <div class="container">
+        <!-- Add Book -->
+        <h2>Add a Book</h2>
+        <label>Title:</label>
+        <input type="text" id="title" placeholder="Enter book title">
+        
+        <label>Author:</label>
+        <input type="text" id="author" placeholder="Enter author name">
+        
+        <label>Review:</label>
+        <input type="text" id="review" placeholder="Enter your review">
+
+        <button onclick="addBook()">Add Book</button>
+
+        <!-- Update Review -->
+        <h2>Update a Review</h2>
+        <label>Book ID:</label>
+        <input type="number" id="bookId" placeholder="Enter book ID">
+        
+        <label>New Review:</label>
+        <input type="text" id="newReview" placeholder="Enter new review">
+        
+        <button onclick="updateReview()">Update Review</button>
+
+        <!-- Get Book Details -->
+        <h2>Get Book Details</h2>
+        <label>Book ID:</label>
+        <input type="number" id="getBookId" placeholder="Enter book ID">
+
+        <button onclick="getBookDetails()">Get Details</button>
+        <p id="bookDetails"></p>
+
+        <!-- Total Books -->
+        <h2>Total Books</h2>
+        <button onclick="getTotalBooks()">Get Total Books</button>
+        <p id="totalBooks"></p>
+
+        <div id="output"></div>
+    </div>
+
+    <script>
+        // Smart Contract ABI and Address
+        const CONTRACT_ABI = [
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "bookId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "title",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "author",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			}
+		],
+		"name": "BookAdded",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "bookId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "newReview",
+				"type": "string"
+			}
+		],
+		"name": "ReviewUpdated",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_title",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_author",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_review",
+				"type": "string"
+			}
+		],
+		"name": "addBook",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "books",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "title",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "author",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "review",
+				"type": "string"
+			},
+			{
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "timestamp",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_bookId",
+				"type": "uint256"
+			}
+		],
+		"name": "getBook",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			},
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getTotalBooks",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_bookId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "_newReview",
+				"type": "string"
+			}
+		],
+		"name": "updateReview",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	}
+];
+        const CONTRACT_ADDRESS = "0xB38407Ca9882bCa9A63c78B539997d41677b068b"; // Replace with deployed contract address
+
+        let web3;
+        let contract;
+
+        // Initialize Web3 and Contract
+        async function init() {
+            if (window.ethereum) {
+                try {
+                    web3 = new Web3(window.ethereum);
+                    await window.ethereum.request({ method: "eth_requestAccounts" });
+                    contract = new web3.eth.Contract(CONTRACT_ABI, CONTRACT_ADDRESS);
+                    console.log("Web3 and contract initialized");
+                } catch (error) {
+                    alert("User denied account access");
+                }
+            } else {
+                alert("Please install MetaMask!");
+            }
+        }
+
+        // Add a Book
+        async function addBook() {
+            const title = document.getElementById("title").value;
+            const author = document.getElementById("author").value;
+            const review = document.getElementById("review").value;
+
+            if (!title || !author || !review) {
+                alert("Please fill all fields");
+                return;
+            }
+
+            const accounts = await web3.eth.getAccounts();
+            try {
+                await contract.methods.addBook(title, author, review).send({ from: accounts[0] });
+                document.getElementById("output").innerText = "Book added successfully!";
+            } catch (err) {
+                console.error(err);
+                document.getElementById("output").innerText = "Error adding book.";
+            }
+        }
+
+        // Update Review
+        async function updateReview() {
+            const bookId = document.getElementById("bookId").value;
+            const newReview = document.getElementById("newReview").value;
+
+            if (!bookId || !newReview) {
+                alert("Please enter book ID and new review");
+                return;
+            }
+
+            const accounts = await web3.eth.getAccounts();
+            try {
+                await contract.methods.updateReview(bookId, newReview).send({ from: accounts[0] });
+                document.getElementById("output").innerText = "Review updated successfully!";
+            } catch (err) {
+                console.error(err);
+                document.getElementById("output").innerText = "Error updating review.";
+            }
+        }
+
+        // Get Book Details
+        async function getBookDetails() {
+            const bookId = document.getElementById("getBookId").value;
+
+            if (!bookId) {
+                alert("Please enter book ID");
+                return;
+            }
+
+            try {
+                const book = await contract.methods.getBook(bookId).call();
+                document.getElementById("bookDetails").innerText = `
+                    Title: ${book[0]} \n
+                    Author: ${book[1]} \n
+                    Review: ${book[2]} \n
+                    Owner: ${book[3]} \n
+                    Added on: ${new Date(book[4] * 1000).toLocaleString()}
+                `;
+            } catch (err) {
+                console.error(err);
+                document.getElementById("output").innerText = "Error fetching book details.";
+            }
+        }
+
+        // Get Total Books
+        async function getTotalBooks() {
+            try {
+                const total = await contract.methods.getTotalBooks().call();
+                document.getElementById("totalBooks").innerText = `Total Books: ${total}`;
+            } catch (err) {
+                console.error(err);
+                document.getElementById("output").innerText = "Error fetching total books.";
+            }
+        }
+
+        // Initialize App
+        init();
+    </script>
+</body>
+</html>
